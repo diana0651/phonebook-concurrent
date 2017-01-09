@@ -50,6 +50,9 @@ plot: output.txt
 calculate: calculate.c
 	$(CC) $(CFLAGS_common) $^ -o $@
 
+style: 
+	astyle --style=kr --indent=spaces=4 --indent-switches --suffix=none *.[ch]
+
 .PHONY: clean
 clean:
 	$(RM) $(EXEC) *.o perf.* \

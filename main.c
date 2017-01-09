@@ -9,8 +9,17 @@
 #include <pthread.h>
 #include <sys/mman.h>
 
+#include "file.c"
+#include "debug.h"
+#include <fcntl.h>
+
 #include IMPL
 
+#ifndef THREAD_NUM
+#define THREAD_NUM 4
+#endif
+
+#define ALIGN_FILE "align.txt"
 #define DICT_FILE "./dictionary/words.txt"
 
 static double diff_in_second(struct timespec t1, struct timespec t2)
@@ -47,10 +56,6 @@ int main(int argc, char *argv[])
     }
 #else
 
-#include "file.c"
-#include "debug.h"
-#include <fcntl.h>
-#define ALIGN_FILE "align.txt"
     file_align(DICT_FILE, ALIGN_FILE, MAX_LAST_NAME_SIZE);
     int fd = open(ALIGN_FILE, O_RDONLY | O_NONBLOCK);
     off_t fs = fsize(ALIGN_FILE);
@@ -69,9 +74,6 @@ int main(int argc, char *argv[])
 
 #if defined(OPT)
 
-#ifndef THREAD_NUM
-#define THREAD_NUM 4
-#endif
     clock_gettime(CLOCK_REALTIME, &start);
 
     char *map = mmap(NULL, fs, PROT_READ, MAP_SHARED, fd, 0);
@@ -99,21 +101,23 @@ int main(int argc, char *argv[])
         pthread_join(tid[i], NULL);
 
     entry *etmp;
-    pHead = pHead->pNext;
-    for (int i = 0; i < THREAD_NUM; i++) {
-        if (i == 0) {
-            pHead = app[i]->pHead->pNext;
-            dprintf("Connect %d head string %s %p\n", i,
-                    app[i]->pHead->pNext->lastName, app[i]->ptr);
-        } else {
+    pHead = app[0]->pHead;
+    // dprintf("Connect %d head string %s %p\n", 0,
+    //         app[0]->pHead->pNext->lastName, app[0]->ptr);
+    etmp = app[0]->pLast;
+     // dprintf("Connect %d tail string %s %p\n", 0, 
+     //        app[0]->pLast->lastName, app[0]->ptr);
+     dprintf("round %d\n", 0);
+    for (int i = 1; i < THREAD_NUM; i++) {
+
             etmp->pNext = app[i]->pHead->pNext;
-            dprintf("Connect %d head string %s %p\n", i,
-                    app[i]->pHead->pNext->lastName, app[i]->ptr);
-        }
+            // dprintf("Connect %d head string %s %p\n", i,
+            //         app[i]->pHead->pNext->lastName, app[i]->ptr);
+        
 
         etmp = app[i]->pLast;
-        dprintf("Connect %d tail string %s %p\n", i,
-                app[i]->pLast->lastName, app[i]->ptr);
+        // dprintf("Connect %d tail string %s %p\n", i,
+        //         app[i]->pLast->lastName, app[i]->ptr);
         dprintf("round %d\n", i);
     }
 
