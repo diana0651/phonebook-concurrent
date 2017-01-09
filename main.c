@@ -13,6 +13,8 @@
 #include "debug.h"
 #include <fcntl.h>
 
+#include "threadpool.h"
+
 #include IMPL
 
 #ifndef THREAD_NUM
@@ -88,17 +90,22 @@ int main(int argc, char *argv[])
     pthread_setconcurrency(THREAD_NUM + 1);
 
     pthread_t *tid = (pthread_t *) malloc(sizeof(pthread_t) * THREAD_NUM);
+    threadpool_t *pool = threadpool_create(THREAD_NUM, 512, NULL); 
     append_a **app = (append_a **) malloc(sizeof(append_a *) * THREAD_NUM);
-    for (int i = 0; i < THREAD_NUM; i++)
+    for (int i = 0; i < THREAD_NUM; i++) {
         app[i] = new_append_a(map + MAX_LAST_NAME_SIZE * i, map + fs, i,
                               THREAD_NUM, entry_pool + i);
+        threadpool_add(pool, &append, app[i], NULL);
+    }
 
     clock_gettime(CLOCK_REALTIME, &mid);
-    for (int i = 0; i < THREAD_NUM; i++)
+    /*for (int i = 0; i < THREAD_NUM; i++)
         pthread_create( &tid[i], NULL, (void *) &append, (void *) app[i]);
 
     for (int i = 0; i < THREAD_NUM; i++)
-        pthread_join(tid[i], NULL);
+        pthread_join(tid[i], NULL);*/
+
+    threadpool_destroy(pool, 1);
 
     entry *etmp;
     pHead = app[0]->pHead;
